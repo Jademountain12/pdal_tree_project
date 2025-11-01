@@ -1,0 +1,145 @@
+{
+  "pipeline": [
+    { "type": "readers.las", "filename": "" },
+
+    { "type": "filters.reprojection", "in_srs": "EPSG:27700", "out_srs": "EPSG:27700" },
+
+    { "type": "filters.splitter", "length": 250, "buffer": 2 },
+
+    { "type": "filters.ferry", "dimensions": "=>waterisnull" },
+    {
+      "type": "filters.assign",
+      "value": [
+        "waterisnull = 3 WHERE Classification <=2",
+        "waterisnull = 3 WHERE Classification == 6",
+        "waterisnull = 3 WHERE Classification >=10 && Classification <=11",
+        "waterisnull = 2 WHERE Classification >=3 && Classification <=5",
+        "waterisnull = 1 WHERE Classification == 12",
+        "waterisnull = 4 WHERE Classification == 17",
+        "waterisnull = 5 WHERE Classification == 9"
+      ]
+    },
+    {
+      "type": "writers.gdal",
+      "tag": "water",
+      "filename": "waterisnull_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "waterisnull",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    },
+
+    { "type": "filters.hag_nn" },
+    { "type": "filters.range", "limits": "Classification[1:5]" },
+    { "type": "filters.assign", "value": [ "HeightAboveGround = HeightAboveGround*100" ] },
+    { "type": "filters.range", "limits": "HeightAboveGround[5:7000]" },
+
+    { "type": "filters.ferry", "dimensions": "=>sub1m_class15" },
+    {
+      "type": "filters.assign",
+      "value": [
+        "sub1m_class15 = 6 WHERE HeightAboveGround <75 && Classification==2",
+        "sub1m_class15 = 6 WHERE HeightAboveGround <75 && Classification==3",
+        "sub1m_class15 = 6 WHERE HeightAboveGround <75 && Classification==4",
+        "sub1m_class15 = 6 WHERE Classification==0 && HeightAboveGround >=40 && HeightAboveGround <75",
+        "sub1m_class15 = 6 WHERE Classification==1 && HeightAboveGround >=40 && HeightAboveGround <75"
+      ]
+    },
+    {
+      "type": "writers.gdal",
+      "tag": "sub15",
+      "filename": "sub1m_class15_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "sub1m_class15",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    },
+
+    { "type": "filters.range", "limits": "Classification[2:5]" },
+    { "type": "filters.ferry", "dimensions": "=>sub1m_class25" },
+    { "type": "filters.assign", "value": [ "sub1m_class25 = 5 WHERE HeightAboveGround <75" ] },
+    {
+      "type": "writers.gdal",
+      "tag": "sub25",
+      "filename": "sub1m_class25_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "sub1m_class25",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    },
+
+    { "type": "filters.ferry", "dimensions": "=>range075_130" },
+    { "type": "filters.assign", "value": [ "range075_130 = 1 WHERE HeightAboveGround >=75 && HeightAboveGround <130" ] },
+    {
+      "type": "writers.gdal",
+      "tag": "r075_130",
+      "filename": "range075_130_output_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "range075_130",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    },
+
+    { "type": "filters.ferry", "dimensions": "=>Height130_300" },
+    { "type": "filters.assign", "value": [ "Height130_300 = 2 WHERE HeightAboveGround >=130 && HeightAboveGround <300" ] },
+    {
+      "type": "writers.gdal",
+      "tag": "h130_300",
+      "filename": "Height130_300_output_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "Height130_300",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    },
+
+    { "type": "filters.ferry", "dimensions": "=>range_300_1500" },
+    { "type": "filters.assign", "value": [ "range_300_1500 = 3 WHERE HeightAboveGround >=300 && HeightAboveGround <1500" ] },
+    {
+      "type": "writers.gdal",
+      "tag": "r300_1500",
+      "filename": "range_300_1500_output_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "range_300_1500",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    },
+
+    { "type": "filters.ferry", "dimensions": "=>above15m" },
+    { "type": "filters.assign", "value": [ "above15m = 4 WHERE HeightAboveGround >=1500" ] },
+    {
+      "type": "writers.gdal",
+      "tag": "above15",
+      "filename": "rangeAbove15m_output_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "above15m",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    },
+
+    {
+      "type": "writers.gdal",
+      "tag": "hagmax",
+      "filename": "hag_max_output_res1m_#.tif",
+      "resolution": 1,
+      "output_type": "max",
+      "binmode": true,
+      "dimension": "HeightAboveGround",
+      "data_type": "uint16_t",
+      "gdalopts": "TILED=YES,COMPRESS=LZW,PREDICTOR=2,NUM_THREADS=ALL_CPUS"
+    }
+  ]
+}
